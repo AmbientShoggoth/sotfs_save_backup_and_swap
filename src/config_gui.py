@@ -1,0 +1,114 @@
+from tkinter import filedialog as filedialogue, simpledialog as simpledialogue
+import tkinter as tk
+from tkinter import ttk
+
+
+class field_entry():
+    def __init__(self,root,frame,label="entry",start_val="",dialogue=False,start_dir=None):
+        
+        self.root=root
+        self.frame=frame
+        
+        self.get_position()
+        
+        self.set_label(label)
+        
+        self.start_val=start_val
+        
+        self.entry=tk.Entry(self.frame)
+        
+        if not dialogue:
+            self.grid_normal()
+        else:
+            self.grid_dialogue(dialogue)
+        
+        self.set_string(start_val)
+        
+    def set_label(self,label):
+        ttk.Label(self.frame, text=label, width=20,).grid(column=0, row=self.pos[1])
+        
+    def get_position(self):
+        global row_counter
+        row_counter+=1
+        
+        self.pos=(1,row_counter)
+        
+    def grid_normal(self):
+        self.entry.grid(column=self.pos[0],row=self.pos[1],columnspan=2)
+    
+    def grid_dialogue(self,dialogue_type):
+        self.entry.grid(column=self.pos[0],row=self.pos[1])
+        
+        if dialogue_type=="file":
+            self.command=self.open_file_dialogue
+        elif dialogue_type=="dir":
+            self.command=self.open_dir_dialogue
+        else:
+            print(f"\n\n\nImproper dialogue type {dialogue_type} for field with start value: {self.start_val}\n\n\n")
+            self.command=self.open_dir_dialogue
+        
+        ttk.Button(self.frame, text="Browse", command=self.command).grid(column=self.pos[0]+1, row=self.pos[1])
+    
+    def open_file_dialogue(self):
+        path=filedialogue.askopenfilename(parent=self.root) #initialdir could be used
+        self.set_string(path)
+        
+    def open_dir_dialogue(self):
+        #path=filedialogue.askdirectory(mode='r', parent=self.root)
+        path=filedialogue.askdirectory(parent=self.root)
+        self.set_string(path)
+        
+    def set_string(self,string):
+        current_length=len(self.entry.get())
+        if current_length:
+            self.entry.delete(0,current_length+1)
+        self.entry.insert(0,string)
+    
+    def update_self_value(self):
+        self.value=self.entry.get()
+    
+    def get_value(self):
+        return(self.value)
+    
+
+def main(config_dict):
+    global row_counter
+    row_counter=1
+    
+    root = tk.Tk()
+    root.title("Configuration")
+    
+    frame = ttk.Frame(root, padding=20)
+    frame.grid()
+    
+    
+    field_dict={
+        "firsttest":field_entry(root=root,frame=frame,start_val="testing_the_first",dialogue="dir"),
+        "secondtest":field_entry(root=root,frame=frame,start_val="testing_the_second",),
+        "secondtest":field_entry(root=root,frame=frame,start_val="testing_the_second",dialogue="file"),
+    }
+    
+    def update_and_terminate():
+        for field in field_dict.values():field.update_self_value()
+        root.destroy()
+        
+    ttk.Label(frame, text="Configuration", width=20,).grid(column=0, row=0,columnspan=3)
+    
+    
+    row_counter+=1
+    ttk.Button(frame, text="Confirm", command=update_and_terminate).grid(column=1, row=row_counter)
+    
+    def fullclose():
+        root.destroy()
+        from sys import exit
+        exit()
+    root.protocol('WM_DELETE_WINDOW', fullclose)
+    
+    def tkquit():root.destroy()
+    
+    root.mainloop()
+    
+    for index,field in field_dict.items():
+        print(f"{index}: '{field.get_value()}'")
+    
+if __name__=="__main__":main()

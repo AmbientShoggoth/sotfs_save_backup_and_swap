@@ -1,12 +1,37 @@
-from shutil import copyfile
-from datetime import datetime
+#from shutil import copyfile
+#from datetime import datetime
 from time import sleep
 from os import makedirs, chdir as os_chdir,listdir
 from os.path import isdir as os_isdir, dirname as os_dirname, realpath as os_realpath
 
 class escapeException(Exception):pass
 
+#import src.static as v
+import src.core
+    
+
 def main():
+    # change working directory to file's directory
+    os_chdir(os_dirname(os_realpath(__file__)))
+    
+    
+    global config
+    config=src.core.startup()
+    
+    print("\n\nEnter nothing to continue, or enter something to switch character or make a new one.")
+    if input(""):src.core.character_manage()
+    
+    backup_loop()
+    
+
+def backup_loop():
+    
+    while True:
+        src.core.backup_char()
+        sleep(config.sleeptime)
+
+
+def _main():
     # change working directory to file's directory
     os_chdir(os_dirname(os_realpath(__file__)))
 
@@ -15,7 +40,7 @@ def main():
         config_list=[i.split("=") for i in config_list]
         config_dict={i[0]:i[1] for i in config_list}
         
-        sleeptime=int(config_dict["backup_interval"])
+        sleeptime=int(config_dict["backup_interval_seconds"])
         save_string=config_dict["save_string"]
         save_path=config_dict["save_path"]
         chardir=config_dict["chardir"]
@@ -44,7 +69,7 @@ def main():
                 return()
 
     def backup_file():
-        timenow=datetime.now()
+        timenow=datetime.now().strftime('%m%b-%d - %H-%M-%S')
         outfilename=f"{save_string}~{timenow.strftime('%m%b-%d - %H-%M-%S')}"
         outfilepath=f"{chardir}/{current_char}/?{outfilename}"
         
@@ -61,17 +86,17 @@ def main():
     def change_character():
         backup_file()
         
-        import char_change_gui
+        import src.char_change_gui as char_change_gui
         char_list=listdir(chardir)
         char_list.remove("base")
-        new_char=char_change_gui.main( char_list+["--NEW--"] )
+        chosen_char=char_change_gui.main( char_list+["--NEW--"] )
         del char_change_gui
         
-        if new_char not in char_list:
-            new_char=input("Enter new character name: ")
+        if chosen_char not in char_list:
+            chosen_char=input("Enter new character name: ")
         
         global current_char
-        current_char=new_char
+        current_char=chosen_char
         char_path=f"{chardir}/{current_char}"
         if not os_isdir(char_path):
             makedirs(char_path)
@@ -80,7 +105,7 @@ def main():
         last_file=[i for i in listdir(char_path) if save_string in i][-1]
         copyfile(f"{char_path}/{last_file}",save_path)
         
-        with open("current.char","w") as f:f.write(new_char)
+        with open("current.char","w") as f:f.write(chosen_char)
         
 
     if input(f"Current Character: {current_char}, change?"):
