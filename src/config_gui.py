@@ -4,7 +4,7 @@ from tkinter import ttk
 
 
 class field_entry():
-    def __init__(self,root,frame,label="entry",start_val="",dialogue=False,start_dir=None):
+    def __init__(self,root,frame,label="entry",start_vals=[],dialogue=False):
         
         self.root=root
         self.frame=frame
@@ -13,7 +13,8 @@ class field_entry():
         
         self.set_label(label)
         
-        self.start_val=start_val
+        self.start_val=start_vals[0]
+        self.start_path=start_vals[1]
         
         self.entry=tk.Entry(self.frame)
         
@@ -22,7 +23,7 @@ class field_entry():
         else:
             self.grid_dialogue(dialogue)
         
-        self.set_string(start_val)
+        self.set_string(self.start_val)
         
     def set_label(self,label):
         ttk.Label(self.frame, text=label, width=20,).grid(column=0, row=self.pos[1])
@@ -49,14 +50,20 @@ class field_entry():
         
         ttk.Button(self.frame, text="Browse", command=self.command).grid(column=self.pos[0]+1, row=self.pos[1])
     
-    def open_file_dialogue(self):
-        path=filedialogue.askopenfilename(parent=self.root) #initialdir could be used
+    def open_dialogue(self,askopentype):
+        
+        if self.start_path:
+            path=askopentype(parent=self.root,initialdir=self.start_path)
+        else:
+            path=askopentype(parent=self.root)
+        
         self.set_string(path)
         
+    def open_file_dialogue(self):
+        self.open_dialogue(filedialogue.askopenfilename)
+        
     def open_dir_dialogue(self):
-        #path=filedialogue.askdirectory(mode='r', parent=self.root)
-        path=filedialogue.askdirectory(parent=self.root)
-        self.set_string(path)
+        self.open_dialogue(filedialogue.askdirectory)
         
     def set_string(self,string):
         current_length=len(self.entry.get())
@@ -71,7 +78,7 @@ class field_entry():
         return(self.value)
     
 
-def main(config_dict):
+def main(input_dict):
     global row_counter
     row_counter=1
     
@@ -83,9 +90,9 @@ def main(config_dict):
     
     
     field_dict={
-        "firsttest":field_entry(root=root,frame=frame,start_val="testing_the_first",dialogue="dir"),
-        "secondtest":field_entry(root=root,frame=frame,start_val="testing_the_second",),
-        "secondtest":field_entry(root=root,frame=frame,start_val="testing_the_second",dialogue="file"),
+        "save_file_location":field_entry(root=root,frame=frame,start_vals=input_dict["save_file_location"],dialogue="file"),
+        "chardir":field_entry(root=root,frame=frame,start_vals=input_dict["chardir"],dialogue="dir"),
+        "backup_interval_seconds":field_entry(root=root,frame=frame,start_vals=input_dict["backup_interval_seconds"]),
     }
     
     def update_and_terminate():
@@ -108,7 +115,6 @@ def main(config_dict):
     
     root.mainloop()
     
-    for index,field in field_dict.items():
-        print(f"{index}: '{field.get_value()}'")
+    config_dict={index: field.get_value() for index,field in field_dict.items()}
     
-if __name__=="__main__":main()
+    return(config_dict)

@@ -6,42 +6,24 @@ from datetime import datetime
 current_char_name=None
 
 def generate_config():
-    from os import getenv
+    from os import getenv,getcwd
     
     with open(f"./src/{v.config_filename}","r") as file:config_string=file.read()
     
-    for i,gamename in enumerate(v.game_list):
-        print(f"{i}: {gamename}")
-    gamename=input("Enter index of the game you wish to manage, or enter 'z' to enter custom values.")
-    while True:
-        try:
-            gamename=int(gamename)
-            gamename=v.game_list[gamename]
-            break
-        except ValueError:
-            if gamename=="z":break
-            else:gamename=input("Not a valid index, or 'z': try again.")
-        except IndexError:
-            gamename=input("Not a valid index, or 'z': try again.")
-            
-    if gamename=="z":
-        print("Enter the full path to the desired save file,\ne.g.\n 'C:/Users/user/AppData/Roaming/DarkSoulsII/01100001061460b3/DS2SOFS0000.sl2'\n")
-        save_file_path=input("")
-    else:save_file_path=f"{getenv('APPDATA')}/{v.save_info_dict[gamename]}"
+    gui_start_dict={
+        "save_file_location":("",getenv('APPDATA')),
+        "chardir":("characters",getcwd()),
+        "backup_interval_seconds":("300","")
+    }
     
-    while True:
-        backup_interval=input("Enter the desired backup interval in seconds.")
-        try:
-            backup_interval=abs(float(backup_interval))
-            if input(f"Is '{backup_interval}' seconds correct? y or n")=="y":
-                break
-        except ValueError:
-            print("Not a valid number")
+    import src.config_gui
+    config_dict=src.config_gui.main(gui_start_dict)
     
     
     
-    config_string=config_string.replace("__save_string_response__",save_file_path)
-    config_string=config_string.replace("__interval_response__",f"{backup_interval}")
+    config_string=config_string.replace("__save_string_response__",config_dict["save_file_location"])
+    config_string=config_string.replace("__interval_response__",f"{config_dict['backup_interval_seconds']}")
+    config_string=config_string.replace("__characters__",f"{config_dict['chardir']}")
     
     with open(v.config_filename,"w") as f:f.write(config_string)
     
@@ -55,7 +37,6 @@ def read_config():
     config_dict={i[0]:i[1] for i in config_list}
     
     class c:pass
-    
     c.sleeptime=float(config_dict["backup_interval_seconds"])
     c.save_path=config_dict["save_file_location"]
     c.chardir=config_dict["chardir"]
@@ -149,11 +130,14 @@ def make_new_char(char_name):
     from os import mkdir
     mkdir(f"{config.chardir}/{char_name}")
     
+    print(f"{config.chardir}/{v.base_save_name}",f"{config.chardir}/{char_name}/0.sl")
     copyfile(f"{config.chardir}/{v.base_save_name}",f"{config.chardir}/{char_name}/0.sl")
     
 def restore_char(char_name):
-    
-    copyfile(listdir(f"{config.chardir}/{char_name}")[-1],config.save_path)
+    dirname=f"{config.chardir}/{char_name}"
+    #f"{dirname}/{listdir(dirname)[-1]}"
+    #listdir(f"{config.chardir}/{char_name}")[-1]
+    copyfile(f"{dirname}/{listdir(dirname)[-1]}",config.save_path)
     
     
 def backup_char(char_name=current_char_name):
@@ -193,11 +177,12 @@ def character_manage():
     
     chardir_ls=listdir(config.chardir)
     chardir_ls.remove(v.base_save_name)
+    chardir_ls=[i for i in chardir_ls if not "." in i]
     
     chosen_char=src.char_change_gui.main( chardir_ls+["--NEW--"] )
     del src.char_change_gui
     
-    if chosen_char not in char_list:
+    if chosen_char not in chardir_ls:
         chosen_char=input_new_char_name()
         make_new_char(chosen_char)
         restore_char(chosen_char)
@@ -207,6 +192,7 @@ def character_manage():
     
     current_char_name=chosen_char
     print(f"Current character set to: '{chosen_char}'")
+    return(current_char_name)
     
     
 
@@ -225,5 +211,5 @@ def startup():
     
     check_char_dir(v.char_filename in file_list)
     
-    return(config)
+    return(config,current_char_name)
     #if not v.char_filename in file_list:
