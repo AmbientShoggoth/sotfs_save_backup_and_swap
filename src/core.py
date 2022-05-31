@@ -10,10 +10,16 @@ def generate_config():
     
     with open(f"./src/{v.config_filename}","r") as file:config_string=file.read()
     
+    try:
+        with open(f"v.char_filename","r") as file:start_char_name=file.read()
+    except FileNotFoundError:
+        start_char_name=""
+    
     gui_start_dict={
         "save_file_location":("",getenv('APPDATA')),
         "chardir":("characters",getcwd()),
-        "backup_interval_seconds":("300","")
+        "backup_interval_seconds":("300",""),
+        "starting_character":(start_char_name,"")
     }
     
     import src.config_gui
@@ -25,9 +31,12 @@ def generate_config():
     config_string=config_string.replace("__interval_response__",f"{config_dict['backup_interval_seconds']}")
     config_string=config_string.replace("__characters__",f"{config_dict['chardir']}")
     
+    
     with open(v.config_filename,"w") as f:f.write(config_string)
     
     print(f"{v.config_filename} written.")
+    
+    return(config_dict["starting_character"])
     
 def read_config():
     with open(f"./{v.config_filename}","r") as file:config_string=file.read()

@@ -2,6 +2,7 @@ from tkinter import filedialog as filedialogue, simpledialog as simpledialogue
 import tkinter as tk
 from tkinter import ttk
 
+initialised=False
 
 class field_entry():
     def __init__(self,root,frame,label="entry",start_vals=[],dialogue=False):
@@ -26,7 +27,7 @@ class field_entry():
         self.set_string(self.start_val)
         
     def set_label(self,label):
-        ttk.Label(self.frame, text=label, width=20,).grid(column=0, row=self.pos[1])
+        ttk.Label(self.frame, text=label, width=30,).grid(column=0, row=self.pos[1])
         
     def get_position(self):
         global row_counter
@@ -76,13 +77,15 @@ class field_entry():
     
     def get_value(self):
         return(self.value)
-    
+
+
 
 def main(input_dict):
     global row_counter
     row_counter=1
     
     root = tk.Tk()
+    #root=initialise()
     root.title("Configuration")
     
     frame = ttk.Frame(root, padding=20)
@@ -90,16 +93,18 @@ def main(input_dict):
     
     
     field_dict={
-        "save_file_location":field_entry(root=root,frame=frame,start_vals=input_dict["save_file_location"],dialogue="file"),
-        "chardir":field_entry(root=root,frame=frame,start_vals=input_dict["chardir"],dialogue="dir"),
-        "backup_interval_seconds":field_entry(root=root,frame=frame,start_vals=input_dict["backup_interval_seconds"]),
+        "save_file_location":field_entry(root=root,frame=frame,start_vals=input_dict["save_file_location"],dialogue="file",label="Save File"),
+        "chardir":field_entry(root=root,frame=frame,start_vals=input_dict["chardir"],dialogue="dir", label="Backups Directory"),
+        "backup_interval_seconds":field_entry(root=root,frame=frame,start_vals=input_dict["backup_interval_seconds"],label="Backup Interval (seconds)"),
+        "starting_character":field_entry(root=root,frame=frame,start_vals=input_dict["starting_character"],label="Name of first "),
     }
     
     def update_and_terminate():
         for field in field_dict.values():field.update_self_value()
         root.destroy()
+        #frame.grid_remove()
         
-    ttk.Label(frame, text="Configuration", width=20,).grid(column=0, row=0,columnspan=3)
+    ttk.Label(frame, text="Enter Configuration Parameters", ).grid(column=0, row=0,columnspan=3)
     
     
     row_counter+=1
@@ -118,3 +123,14 @@ def main(input_dict):
     config_dict={index: field.get_value() for index,field in field_dict.items()}
     
     return(config_dict)
+    
+
+def initialise():
+    global initialised
+    global main_root
+    
+    if initialised:return(main_root)
+    else:
+        main_root=tk.Tk()
+        return(main_root)
+        
