@@ -18,9 +18,8 @@ def main():
     global config
     config,char_name=src.core.startup()
     
-    print("\n\n\nEnter nothing to continue,\nor enter something to switch character or make a new one")
-    if input(""):
-        char_name=src.core.character_manage()
+    char_name_=src.core.character_manage()
+    if char_name_:char_name=char_name_
     
     backup_loop(char_name)
     
