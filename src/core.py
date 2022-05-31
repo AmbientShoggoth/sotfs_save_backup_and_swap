@@ -5,27 +5,29 @@ from datetime import datetime
 
 current_char_name=None
 
-def generate_config():
+import src.config_gui
+
+def generate_config(current_exists):
     from os import getenv,getcwd
     
     with open(f"./src/{v.config_filename}","r") as file:config_string=file.read()
     
-    try:
-        with open(f"v.char_filename","r") as file:start_char_name=file.read()
-    except FileNotFoundError:
-        start_char_name=""
+    
     
     gui_start_dict={
         "save_file_location":("",getenv('APPDATA')),
         "chardir":("characters",getcwd()),
         "backup_interval_seconds":("300",""),
-        "starting_character":(start_char_name,"")
     }
     
-    import src.config_gui
-    config_dict=src.config_gui.main(gui_start_dict)
+    if not current_exists:
+        gui_start_dict["starting_character"]=("","")
     
     
+    config_dict=src.config_gui.config_gui(gui_start_dict)
+    
+    if "starting_character" in gui_start_dict:
+        set_current_char_file(config_dict["starting_character"])
     
     config_string=config_string.replace("__save_string_response__",config_dict["save_file_location"])
     config_string=config_string.replace("__interval_response__",f"{config_dict['backup_interval_seconds']}")
@@ -36,7 +38,7 @@ def generate_config():
     
     print(f"{v.config_filename} written.")
     
-    return(config_dict["starting_character"])
+    return()
     
 def read_config():
     with open(f"./{v.config_filename}","r") as file:config_string=file.read()
@@ -61,49 +63,11 @@ def gen_base_char():
     
     copyfile(config.save_path,f"{config.chardir}/{v.base_save_name}")
 
-def check_current_char(current_exists,char_list):
+def check_current_char(char_list):
     global current_char_name
     
-    if not current_exists:
-        print(f"'{v.char_filename}' not found.\n")
-        if char_list:
-            for i,val in enumerate(char_list):
-                print(f"{i}: {val}")
-            print("\nChoose the character to use as the currently selected character.\nEnter the index of a currently existing character to use that, or enter the name of a new character to be generated from the base save file.")
-        else:
-            print("Enter the name of a new character to be generated from the base save file and used as the currently selected character.")
-        
-        while True:
-            new_char_name=input("\n\nEnter a new character name (or index of an existing character).\n")
-            print("")
-            if not new_char_name or not new_char_name.replace(" ",""):
-                print("Enter something...")
-                continue
-            try:
-                new_char_name=int(new_char_name)
-                new_char_name=char_list[new_char_name]
-            except ValueError:pass
-            except IndexError:
-                print(f"Not a valid index. Assuming you would like to name your character {new_char_name}.")
-                new_char_name=str(new_char_name)
-            
-            # try to avoid invalid folder names
-            test=[i for i in '<">/\\|?*:.' if i in new_char_name]
-            if test:
-                for i in test:
-                    print(f'The following symbol cannot be included in the name: {i}')
-                continue
-            
-            print(f"New character will be named '{new_char_name}'.\nIs this correct, 'y' or 'n'?")
-            if input("")=="y":break
-        
-        with open(v.char_filename, "w") as f:f.write(new_char_name)
-        current_char_name=new_char_name
-        
-        
-    
-    else:
-        with open(v.char_filename,"r") as f:current_char_name=f.read()
+    with open(v.char_filename,"r") as f:
+        current_char_name=f.read()
     
     if not current_char_name in char_list:
         # make backup of save currently in game's saves
@@ -112,23 +76,7 @@ def check_current_char(current_exists,char_list):
         
         make_new_char(current_char_name)
         restore_char(current_char_name)
-        
 
-def input_new_char_name():
-
-    while True:
-        new_char_name=input("\n\nEnter a new character name\n\n")
-        if not new_char_name or not new_char_name.replace(" ",""):
-            print("Enter something...")
-            continue
-        
-        # try to avoid invalid folder names
-        test=[i for i in '<">/\\|?*:.' if i in new_char_name]
-        if test:
-            for i in test:
-                print(f'The following symbol cannot be included in the name: {i}')
-        else:
-            return(new_char_name)
 def set_current_char_file(char_name):
     with open(v.char_filename, "w") as f:f.write(char_name)
 
@@ -154,7 +102,7 @@ def backup_char(char_name=current_char_name):
     copyfile(config.save_path, f"{config.chardir}/{char_name}/{save_file_name}")
     print(f"{char_name}: {save_file_name}")
     
-def check_char_dir(current_exists):
+def check_char_dir():
     
     from os.path import isdir
     
@@ -176,23 +124,21 @@ def check_char_dir(current_exists):
     if not v.base_save_name in chardir_ls:gen_base_char()
     else:chardir_ls=[i for i in chardir_ls if not i==v.base_save_name]
     
-    check_current_char(current_exists,chardir_ls)
+    check_current_char(chardir_ls)
 
 def character_manage():
+    if not src.config_gui.loop_or_manage_decision_gui():return()
+    
     global current_char_name
     backup_char(current_char_name)
-    
-    import src.char_change_gui
-    
+        
     chardir_ls=listdir(config.chardir)
     chardir_ls.remove(v.base_save_name)
     chardir_ls=[i for i in chardir_ls if not "." in i]
     
-    chosen_char=src.char_change_gui.main( chardir_ls+["--NEW--"] )
-    del src.char_change_gui
+    chosen_char,is_new=src.config_gui.char_change_gui(chardir_ls)
     
-    if chosen_char not in chardir_ls:
-        chosen_char=input_new_char_name()
+    if is_new:
         make_new_char(chosen_char)
         restore_char(chosen_char)
     else:
@@ -204,6 +150,7 @@ def character_manage():
     return(current_char_name)
     
     
+    
 
 def switch_character():
     pass
@@ -213,12 +160,12 @@ def startup():
     file_list=listdir("./")
     
     if not v.config_filename in file_list:
-        generate_config()
+        generate_config(v.char_filename in file_list)
     
     global config
     config=read_config()
     
-    check_char_dir(v.char_filename in file_list)
+    check_char_dir()
     
     return(config,current_char_name)
     #if not v.char_filename in file_list:

@@ -80,15 +80,16 @@ class field_entry():
 
 
 
-def main(input_dict):
+def config_gui(input_dict):
     global row_counter
     row_counter=1
     
-    root = tk.Tk()
-    #root=initialise()
+    #root = tk.Tk()
+    root=initialise()
     root.title("Configuration")
     
-    frame = ttk.Frame(root, padding=20)
+    #frame = ttk.Frame(root, padding=20)
+    frame = ttk.Frame(root)
     frame.grid()
     
     
@@ -96,13 +97,17 @@ def main(input_dict):
         "save_file_location":field_entry(root=root,frame=frame,start_vals=input_dict["save_file_location"],dialogue="file",label="Save File"),
         "chardir":field_entry(root=root,frame=frame,start_vals=input_dict["chardir"],dialogue="dir", label="Backups Directory"),
         "backup_interval_seconds":field_entry(root=root,frame=frame,start_vals=input_dict["backup_interval_seconds"],label="Backup Interval (seconds)"),
-        "starting_character":field_entry(root=root,frame=frame,start_vals=input_dict["starting_character"],label="Name of first "),
+        
     }
+    
+    if "starting_character" in input_dict:
+        field_dict["starting_character"]=field_entry(root=root,frame=frame,start_vals=input_dict["starting_character"],label="Name of first ")
     
     def update_and_terminate():
         for field in field_dict.values():field.update_self_value()
-        root.destroy()
-        #frame.grid_remove()
+        #root.destroy()
+        frame.grid_remove()
+        root.quit()
         
     ttk.Label(frame, text="Enter Configuration Parameters", ).grid(column=0, row=0,columnspan=3)
     
@@ -110,11 +115,7 @@ def main(input_dict):
     row_counter+=1
     ttk.Button(frame, text="Confirm", command=update_and_terminate).grid(column=1, row=row_counter)
     
-    def fullclose():
-        root.destroy()
-        from sys import exit
-        exit()
-    root.protocol('WM_DELETE_WINDOW', fullclose)
+    
     
     def tkquit():root.destroy()
     
@@ -123,14 +124,114 @@ def main(input_dict):
     config_dict={index: field.get_value() for index,field in field_dict.items()}
     
     return(config_dict)
+
+
+def char_change_gui(character_list):
+    global row_counter
+    row_counter=1
     
+    new_char_name=None
+    
+    #root = tk.Tk()
+    root=initialise()
+    root.title("Character Selection")
+    
+    #frame = ttk.Frame(root, padding=20)
+    frame = ttk.Frame(root)
+    frame.grid()
+    
+    
+    def new_char_terminate():
+        new_char_field.update_self_value()
+        new_char_name=new_char_field.get_value()
+        
+        #root.destroy()
+        frame.grid_remove()
+        root.quit()
+        char_change_gui.returners=(new_char_name,True)
+    
+    def char_terminate(char_name):
+        
+        #root.destroy()
+        frame.grid_remove()
+        root.quit()
+        char_change_gui.returners=(char_name,False)
+    
+    ttk.Label(frame, text="Select a character, or enter the name of a new one.", ).grid(column=0, row=0,columnspan=3)
+    
+    class char_button():
+        def __init__(self,char_name):
+            self.name=char_name
+            
+            global row_counter
+            row_counter+=1
+            
+            ttk.Button(frame, text=self.name, command=self.command).grid(column=1, row=row_counter)
+        def command(self):
+            char_terminate(self.name)
+    char_button_list=[char_button(i) for i in character_list]
+    
+    
+    
+    new_char_field=field_entry(root=root,frame=frame,start_vals=("",""),label="--New Character/Profile--")
+    row_counter+=1
+    ttk.Button(frame, text="Create", command=new_char_terminate).grid(column=1, row=row_counter)
+    
+    
+    
+    def tkquit():root.destroy()
+    
+    root.mainloop()
+    return(char_change_gui.returners)
+
+def loop_or_manage_decision_gui():
+    global row_counter
+    row_counter=1
+    
+    root=initialise()
+    root.title("Decision")
+    
+    frame = ttk.Frame(root)
+    frame.grid()
+    
+    
+    def change_char_terminate():
+        frame.grid_remove()
+        root.destroy()
+        loop_or_manage_decision_gui.returners=True
+    
+    def retain_char_terminate():
+        frame.grid_remove()
+        root.destroy()
+        loop_or_manage_decision_gui.returners=False
+    
+    ttk.Label(frame, text="Choose to either proceed to the backup loop, or change save profile.", ).grid(column=0, row=0,columnspan=3)
+    
+    row_counter+=1
+    ttk.Button(frame, text="Continue", command=retain_char_terminate).grid(column=1, row=row_counter)
+    ttk.Button(frame, text="Change Character", command=change_char_terminate).grid(column=2, row=row_counter)
+    
+    
+    
+    def tkquit():root.destroy()
+    
+    root.mainloop()
+    return(loop_or_manage_decision_gui.returners)
 
 def initialise():
     global initialised
     global main_root
     
+    def fullclose():
+        main_root.destroy()
+        from sys import exit
+        exit()
+    
+    
     if initialised:return(main_root)
     else:
         main_root=tk.Tk()
+        main_root.protocol('WM_DELETE_WINDOW', fullclose)
+        initialised=True
         return(main_root)
         
